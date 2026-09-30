@@ -122,7 +122,7 @@ if(packs.register)packs.register({id:'mgt350-syllabus-v351',matches:isMGT,build:
   --amber:#f2b75b;--blue:#cde5ff;--rose:#fde0dc;--shadow:0 14px 40px rgba(24,54,42,.08);
   --r:18px;--r2:13px;
 }
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.01em}button,input,textarea,select{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:Geist,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.01em}button,input,textarea,select{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}
 .app{min-height:100vh;display:grid;grid-template-columns:236px 1fr}.sidebar{position:sticky;top:0;height:100vh;background:#10271f;color:#eef5f0;padding:24px 18px 20px;border-right:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column}.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;padding:0 8px 24px}.logo{width:30px;height:30px;border-radius:9px;background:var(--lime);display:grid;grid-template-columns:repeat(2,1fr);gap:3px;padding:6px}.logo i{display:block;background:#173529;border-radius:2px}.nav{display:grid;gap:6px}.nav button{border:0;background:transparent;color:#adc0b6;padding:11px 12px;border-radius:10px;text-align:left;font-weight:650;display:flex;align-items:center;gap:10px}.nav button:hover,.nav button.active{background:#1c3a2e;color:#fff}.nav .dot{width:7px;height:7px;border:1.5px solid currentColor;border-radius:50%}.nav button.active .dot{background:var(--lime);border-color:var(--lime)}.side-spacer{flex:1}.profile{border-top:1px solid rgba(255,255,255,.1);padding:16px 8px 0}.profile small{color:#90a79b}.profile strong{display:block;margin:3px 0 1px}.role-switch{margin-top:12px;width:100%;background:#1b3b2e;color:#fff;border:1px solid rgba(255,255,255,.08);padding:10px;border-radius:10px;font-weight:700}
 .main{min-width:0}.topbar{height:70px;display:flex;align-items:center;justify-content:space-between;padding:0 34px;border-bottom:1px solid var(--line);background:rgba(244,245,239,.92);backdrop-filter:blur(14px);position:sticky;top:0;z-index:20}.crumb{font-size:14px;color:var(--muted)}.top-actions{display:flex;align-items:center;gap:10px}.mini-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;font-weight:700;color:#3f5048}.avatar{width:34px;height:34px;border-radius:50%;background:#d7eade;display:grid;place-items:center;font-weight:800;color:#20543d}
 .page{display:none;max-width:1280px;margin:0 auto;padding:34px}.page.active{display:block}.eyebrow{font-size:11px;font-weight:850;letter-spacing:.14em;text-transform:uppercase;color:var(--brand)}.hero-row{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:22px}.hero-row h1{margin:4px 0 0;font-size:36px;letter-spacing:-.04em}.sub{color:var(--muted);line-height:1.55}.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;padding:7px 10px;border-radius:999px;color:#526058;font-size:12px;font-weight:750}.pill b{color:var(--ink)}
@@ -338,11 +338,16 @@ body{background:linear-gradient(180deg,#fbfdfc 0%,#f7faf9 52%,#fbfcff 100%)}
 </style><style>.sample-row,.setting-row:has(#resetDemoBtn){display:none!important}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap">
 <style>
-body,p,li,small,label,input,textarea,select,td,.muted{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body,p,li,small,label,input,textarea,select,td,.muted,h1,h2,h3,h4,h5,h6,.eyebrow,button{font-family:Geist,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{font-weight:400}
+h1{font-weight:700!important}
+h2,h3,h4,h5,h6{font-weight:600!important}
+button{font-weight:600!important}
+label{font-weight:500!important}
 p,li{line-height:1.55}
-h1,h2,h3,h4,.eyebrow,button,code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .v341-nav-icon,.v372-nav-util>span:first-child{font-size:0!important;display:inline-block;width:18px;height:18px;flex:none;background:currentColor;-webkit-mask:var(--cova-icon) center/contain no-repeat;mask:var(--cova-icon) center/contain no-repeat}
 [data-v341-main="home"] .v341-nav-icon{--cova-icon:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8'/><path d='M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/></svg>")}
 [data-v341-main="classes"] .v341-nav-icon{--cova-icon:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 7v14'/><path d='M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z'/></svg>")}
