@@ -2,6 +2,8 @@ import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 import { getStudentStore } from '@/lib/student-data'
 
+const REPORT_OWNER_EMAIL = 'declan.mohan2007@gmail.com'
+
 function csvCell(value: unknown) {
   const text = typeof value === 'string' ? value : JSON.stringify(value) ?? ''
   return `"${text.replace(/"/g, '""')}"`
@@ -10,6 +12,9 @@ function csvCell(value: unknown) {
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  if (session.user.email.trim().toLowerCase() !== REPORT_OWNER_EMAIL) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const store = await getStudentStore(session.user.id)
   const rows = [

@@ -59,6 +59,7 @@ const BOOTSTRAP = `
   }
   window.covaDownloadAnalytics=downloadAnalytics;
   window.addEventListener('DOMContentLoaded',function(){
+    if(!C.user || String(C.user.email||'').trim().toLowerCase()!=='declan.mohan2007@gmail.com')return;
     var button=document.createElement('button');
     button.type='button';button.textContent='Download analytics report';
     button.setAttribute('aria-label','Download analytics report');
