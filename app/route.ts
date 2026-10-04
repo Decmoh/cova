@@ -43,6 +43,30 @@ const BOOTSTRAP = `
   Storage.prototype.removeItem=function(k){origRemove.call(this,k);if(this===ls)mark(k)};
   window.addEventListener('pagehide',function(){flush(true)});
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flush(true)});
+  function downloadAnalytics(){
+    flush(false).then(function(){
+      return fetch('/api/student-data/report',{credentials:'same-origin'});
+    }).then(function(r){
+      if(!r.ok)throw new Error('Report download failed');
+      return r.blob();
+    }).then(function(blob){
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='cova-campus-analytics.csv';
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(a.href)},1000);
+    }).catch(function(err){console.error('[cova] analytics export failed:',err)});
+  }
+  window.covaDownloadAnalytics=downloadAnalytics;
+  window.addEventListener('DOMContentLoaded',function(){
+    if(!C.user || String(C.user.email||'').trim().toLowerCase()!=='declan.mohan2007@gmail.com')return;
+    var button=document.createElement('button');
+    button.type='button';button.textContent='Download analytics report';
+    button.setAttribute('aria-label','Download analytics report');
+    button.style.cssText='position:fixed;right:16px;bottom:16px;z-index:9999;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#111827;font:600 14px/1.2 sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.12);cursor:pointer';
+    button.addEventListener('click',downloadAnalytics);
+    document.body.appendChild(button);
+  });
   window.covaSignOut=function(){
     return flush(false).then(function(){
       return fetch('/api/auth/sign-out',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',credentials:'same-origin'});
