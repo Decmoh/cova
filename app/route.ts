@@ -34,8 +34,8 @@ const BOOTSTRAP = `
     dirty=false;clearTimeout(timer);
     var body=JSON.stringify({store:snapshot()});
     inflight=fetch('/api/student-data',{method:'PUT',headers:{'Content-Type':'application/json'},body:body,credentials:'same-origin',keepalive:!!unloading&&body.length<60000})
-      .then(function(r){if(r.status===401){window.location.href='/sign-in'}else if(!r.ok){dirty=true}})
-      .catch(function(){dirty=true});
+      .then(function(r){if(r.status===401){window.location.href='/sign-in'}else if(!r.ok){dirty=true;console.error('[cova] progress save failed, will retry:',r.status);if(!unloading)timer=setTimeout(flush,3000)}})
+      .catch(function(err){dirty=true;console.error('[cova] progress save failed, will retry:',err);if(!unloading)timer=setTimeout(flush,3000)});
     return inflight;
   }
   function mark(k){if(typeof k==='string'&&k.indexOf(P)===0){dirty=true;clearTimeout(timer);timer=setTimeout(flush,1000)}}
