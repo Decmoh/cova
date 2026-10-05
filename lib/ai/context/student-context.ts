@@ -87,7 +87,16 @@ function flatten(
 
 function titleFromParent(parent?: Record<string, unknown>) {
   if (!parent) return null
-  for (const key of ['name', 'title', 'topic', 'concept', 'label', 'course', 'subject', 'code']) {
+  for (const key of [
+    'name',
+    'title',
+    'topic',
+    'concept',
+    'label',
+    'course',
+    'subject',
+    'code',
+  ]) {
     const value = parent[key]
     if (typeof value === 'string' && value.trim()) return value.trim()
   }
@@ -105,6 +114,17 @@ function humanizePath(path: string) {
   )
 }
 
+function scoreValue(value: Primitive) {
+  if (typeof value === 'number') return value
+  if (typeof value !== 'string') return null
+
+  const trimmed = value.trim().replace(/%$/, '')
+  if (!trimmed) return null
+
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 function normalizeScore(value: number) {
   if (!Number.isFinite(value)) return null
   const percent = value >= 0 && value <= 1 ? value * 100 : value
@@ -116,23 +136,27 @@ function academicSignals(entries: FlatEntry[]): AcademicSignal[] {
   const candidates: AcademicSignal[] = []
 
   for (const entry of entries) {
-    if (typeof entry.value !== 'number') continue
     const searchable = `${entry.sourceKey} ${entry.path}`
     if (!ACADEMIC_SCORE_HINT.test(searchable)) continue
 
-    const normalizedScore = normalizeScore(entry.value)
+    const value = scoreValue(entry.value)
+    if (value === null) continue
+
+    const normalizedScore = normalizeScore(value)
     if (normalizedScore === null) continue
 
     const parentLabel = titleFromParent(entry.parent)
     const label =
       parentLabel ??
-      (ACADEMIC_LABEL_HINT.test(entry.path) ? humanizePath(entry.path) : 'Academic performance')
+      (ACADEMIC_LABEL_HINT.test(entry.path)
+        ? humanizePath(entry.path)
+        : 'Academic performance')
 
     candidates.push({
       sourceKey: entry.sourceKey,
       path: entry.path,
       label,
-      value: entry.value,
+      value,
       normalizedScore,
     })
   }
@@ -151,6 +175,20 @@ function academicSignals(entries: FlatEntry[]): AcademicSignal[] {
     .slice(0, 20)
 }
 
+function calendarDaysBetween(now: Date, date: Date) {
+  const start = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  )
+  const end = Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+  )
+  return Math.round((end - start) / 86_400_000)
+}
+
 function upcomingDates(entries: FlatEntry[], now: Date): UpcomingDateSignal[] {
   const candidates: UpcomingDateSignal[] = []
 
@@ -163,7 +201,7 @@ function upcomingDates(entries: FlatEntry[], now: Date): UpcomingDateSignal[] {
     if (!Number.isFinite(timestamp)) continue
 
     const date = new Date(timestamp)
-    const daysAway = Math.ceil((date.getTime() - now.getTime()) / 86_400_000)
+    const daysAway = calendarDaysBetween(now, date)
     if (daysAway < 0 || daysAway > 180) continue
 
     candidates.push({
@@ -194,7 +232,9 @@ function courseCodes(entries: FlatEntry[]) {
   for (const entry of entries) {
     if (typeof entry.value !== 'string') continue
     const matches = entry.value.toUpperCase().match(COURSE_CODE) ?? []
-    matches.forEach((match) => codes.add(match.replace(/\s*-?\s*/, ' ')))
+    matches.forEach((match) => {
+      codes.add(match.replace(/\s*-?\s*/, ' ').trim())
+    })
   }
 
   return Array.from(codes).slice(0, 30)
