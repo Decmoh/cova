@@ -78,6 +78,56 @@ const BOOTSTRAP = `
 })();
 `
 
+const QUESTION_NAV_PATCH = `
+(function(){
+  function syncNextQuestionButton(){
+    var root=document.querySelector('#v19QuestionRoot');
+    if(!root)return;
+    var right=root.querySelector('.v19-session-actions .right');
+    if(!right)return;
+
+    var button=right.querySelector('#v344SkipBtn');
+    if(!button){
+      button=document.createElement('button');
+      button.type='button';
+      button.className='secondary';
+      button.id='v344SkipBtn';
+    }
+
+    var feedbackNext=root.querySelector('#v19Feedback #v19NextBtn,#v19Feedback #v34ShortNext,#v19Feedback #cf-legacy-next');
+    button.textContent=feedbackNext&&feedbackNext.textContent?feedbackNext.textContent:'Next question';
+    button.setAttribute('aria-label',button.textContent);
+    button.title=feedbackNext?'Continue to the next question':'Skip this question for now and go to the next one';
+
+    button.onclick=function(){
+      var next=root.querySelector('#v19Feedback #v19NextBtn,#v19Feedback #v34ShortNext,#v19Feedback #cf-legacy-next');
+      if(next&&typeof next.click==='function'){next.click();return}
+      if(typeof v344SkipCurrent==='function'){v344SkipCurrent();return}
+      if(typeof advanceV19Question==='function')advanceV19Question();
+    };
+
+    right.appendChild(button);
+    try{if(typeof normalizeButtons==='function')normalizeButtons(root)}catch(e){}
+  }
+
+  try{
+    if(typeof renderV19Question==='function'&&!renderV19Question.__covaNextQuestion){
+      var priorRender=renderV19Question;
+      var wrappedRender=function(){
+        var result=priorRender.apply(this,arguments);
+        syncNextQuestionButton();
+        return result;
+      };
+      wrappedRender.__covaNextQuestion=true;
+      renderV19Question=wrappedRender;
+      window.renderV19Question=wrappedRender;
+    }
+  }catch(e){console.error('[cova] next-question button setup failed:',e)}
+
+  syncNextQuestionButton();
+})();
+`
+
 // Faculty screens only show sample class data, so hiding them client-side is
 // enough; nothing faculty-only is sent from the server to student accounts.
 const STUDENT_LOCK = `
@@ -120,7 +170,7 @@ export async function GET() {
   const injection = `<script>window.__COVA__=${safeJson(payload)};${BOOTSTRAP}</script>`
   const body = html
     .replace(/<head([^>]*)>/i, (match) => `${match}${injection}`)
-    .replace(/<\/body>/i, (match) => (role === 'faculty' ? match : `<script>${STUDENT_LOCK}</script>${match}`))
+    .replace(/<\\/body>/i, (match) => `<script>${QUESTION_NAV_PATCH}</script>${role === 'faculty' ? '' : `<script>${STUDENT_LOCK}</script>`}${match}`)
 
   return new Response(body, {
     headers: {
