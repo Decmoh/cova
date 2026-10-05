@@ -1,9 +1,9 @@
 import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
-import { getStudentStore } from '@/lib/student-data'
 import { AGENTS } from '@/lib/ai/registry'
-import { buildStudentAgentContext } from '@/lib/ai/context/student-context'
 import { createStudyCoachRecommendation } from '@/lib/ai/agents/study-coach'
+import { readStudentAcademicContext } from '@/lib/ai/tools/student-context'
+import { createAgentRun, logAgentRun } from '@/lib/ai/runs'
 
 async function getUserId() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -25,27 +25,63 @@ export async function POST(request: Request) {
     // An empty body is valid. Study Coach defaults to a 30-minute session.
   }
 
-  const store = await getStudentStore(userId)
-  const context = buildStudentAgentContext(userId, store)
-  const recommendation = createStudyCoachRecommendation(
-    context,
-    requestedMinutes,
-  )
-
-  return Response.json({
-    agent: {
-      id: AGENTS['study-coach'].id,
-      name: AGENTS['study-coach'].name,
-      version: AGENTS['study-coach'].version,
-    },
-    recommendation,
-    contextSummary: {
-      storedRecordCount: context.storedRecordCount,
-      detectedAcademicSignals: context.academicSignals.length,
-      detectedUpcomingDates: context.upcomingDates.length,
-      detectedCourseCodes: context.courseCodes,
-    },
+  const run = createAgentRun('study-coach')
+  logAgentRun({
+    runId: run.runId,
+    agentId: run.agentId,
+    event: 'started',
   })
+
+  try {
+    const context = await readStudentAcademicContext(run.agentId, userId)
+    const recommendation = createStudyCoachRecommendation(
+      context,
+      requestedMinutes,
+    )
+
+    logAgentRun({
+      runId: run.runId,
+      agentId: run.agentId,
+      event: 'completed',
+      durationMs: Date.now() - run.startedAt,
+      metadata: {
+        storedRecordCount: context.storedRecordCount,
+        academicSignals: context.academicSignals.length,
+        upcomingDates: context.upcomingDates.length,
+      },
+    })
+
+    return Response.json({
+      runId: run.runId,
+      agent: {
+        id: AGENTS['study-coach'].id,
+        name: AGENTS['study-coach'].name,
+        version: AGENTS['study-coach'].version,
+      },
+      recommendation,
+      contextSummary: {
+        storedRecordCount: context.storedRecordCount,
+        detectedAcademicSignals: context.academicSignals.length,
+        detectedUpcomingDates: context.upcomingDates.length,
+        detectedCourseCodes: context.courseCodes,
+      },
+    })
+  } catch {
+    logAgentRun({
+      runId: run.runId,
+      agentId: run.agentId,
+      event: 'failed',
+      durationMs: Date.now() - run.startedAt,
+    })
+
+    return Response.json(
+      {
+        runId: run.runId,
+        error: 'Study Coach could not complete this run.',
+      },
+      { status: 500 },
+    )
+  }
 }
 
 export const dynamic = 'force-dynamic'
