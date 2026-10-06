@@ -258,7 +258,7 @@ export async function GET() {
   const injection = `<script>window.__COVA__=${safeJson(payload)};${BOOTSTRAP}</script>`
   const body = html
     .replace(/<head([^>]*)>/i, (match) => `${match}${injection}`)
-    .replace(/<\/body>/i, (match) => `<script>${QUESTION_NAV_PATCH}</script><script>${ACG_EXAM_SCOPE_PATCH}</script><script>${LAUNCH_FIX_PATCH}</script>${role === 'faculty' ? '' : `<script>${STUDENT_LOCK}</script>`}${match}`)
+    .replace(/<\/body>/i, (match) => `<script>${QUESTION_NAV_PATCH}</script><script>${ACG_EXAM_SCOPE_PATCH}</script><script>${LAUNCH_FIX_PATCH}</script><script src="/canvas-materials.js"></script>${role === 'faculty' ? '' : `<script>${STUDENT_LOCK}</script>`}${match}`)
 
   return new Response(body, {
     headers: {
