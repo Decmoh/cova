@@ -256,7 +256,9 @@ export async function GET() {
     store,
   }
   const injection = `<script>window.__COVA__=${safeJson(payload)};${BOOTSTRAP}</script>`
+  const canvasBridge = await readFile(path.join(process.cwd(), 'content/ban-canvas-bridge.js'), 'utf-8')
   const body = html
+    .replace('/* -------------------- Bootstrap / expose -------------------- */', canvasBridge + '\n/* -------------------- Bootstrap / expose -------------------- */')
     .replace(/<head([^>]*)>/i, (match) => `${match}${injection}`)
     .replace(/<\/body>/i, (match) => `<script>${QUESTION_NAV_PATCH}</script><script>${ACG_EXAM_SCOPE_PATCH}</script><script>${LAUNCH_FIX_PATCH}</script><script src="/canvas-materials.js"></script>${role === 'faculty' ? '' : `<script>${STUDENT_LOCK}</script>`}${match}`)
 
