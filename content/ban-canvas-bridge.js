@@ -3,24 +3,23 @@
   function read(){try{var d=JSON.parse(localStorage.getItem(KEY));return d&&Array.isArray(d.courses)?d:{courses:[]};}catch(_){return {courses:[]};}}
   function escape(v){return esc(v);}
   function sourceUrl(value,origin){try{var u=new URL(value);return u.protocol==='https:'&&u.origin===origin?u.href:'';}catch(_){return '';}}
-  /* Account-private Canvas notes now feed BAN 280 review. No shared dates or
-     instructor exam blueprint are inferred from the presence of lecture notes. */
+  /* Original BAN 280 exercises are available to every account. Imported notes
+     add private source references, never shared dates or an exam blueprint. */
   var banCacheRaw = null, banCache = null;
   function banReview() {
     var raw = localStorage.getItem(KEY);
     if (raw === banCacheRaw && banCache) return banCache;
     banCacheRaw = raw;
-    var data = read(), c = (data.courses || []).find(function(x){return x.code.replace(/\W/g,'') === 'BAN280';});
-    var out = {bank:[], sources:[], chapters:[], section:c&&c.section};
-    if (!c) return (banCache = out);
+    var data = read(), c = (data.courses || []).find(function(x){return String(x.code||'').replace(/\W/g,'') === 'BAN280';});
+    var out = {bank:[], sources:[], chapters:[1,2,3,6], section:c&&c.section};
     function evidence(chapter, pattern) {
-      var module = (c.modules||[]).find(function(m){return new RegExp('^Chapter '+chapter+'(?:\\D|$)','i').test(m.title);});
-      var item = module && module.items.find(function(x){return x.type === 'Attachment' && x.text && x.text.length > 200 && pattern.test(x.text) && sourceUrl(x.sourceUrl,data.sourceOrigin);});
-      if(item){if(out.sources.indexOf(item)<0)out.sources.push(item);if(out.chapters.indexOf(chapter)<0)out.chapters.push(chapter);}
-      return item;
+      var module = (c&&c.modules||[]).find(function(m){return new RegExp('^Chapter '+chapter+'(?:\\D|$)','i').test(m.title);});
+      var item = module && (module.items||[]).find(function(x){return x.type === 'Attachment' && x.text && x.text.length > 200 && pattern.test(x.text) && sourceUrl(x.sourceUrl,data.sourceOrigin);});
+      if(item){if(out.sources.indexOf(item)<0)out.sources.push(item);return {title:item.title,sourceUrl:item.sourceUrl,imported:true};}
+      return {title:'Cova original chapter '+chapter+' review',sourceUrl:'',imported:false};
     }
     function base(source, chapter, skill, id, prompt, explanation) {
-      return {id:'canvas-ban-'+id,courseId:'uncw-ban-280',chapterId:'canvas-ban-ch'+chapter,topicId:skill,skillId:skill,skill:skill,course:'Statistical Analysis for Business and Economics',family:'canvas-ban-'+skill,format:'numeric',difficulty:2,cognitive:'Apply',evidenceDimension:'Do',version:1,v36Pilot:true,v35Expanded:true,masteryEligible:false,v25MasteryEligible:false,practiceOnly:true,v344PracticeOnly:true,provenance:'course_material',answerProvenance:'cova_derived_solution',sourceType:'Cova-original review · '+source.title,sourceUrl:source.sourceUrl,sourceTitle:source.title,prompt:prompt,explanation:explanation+' Cova-derived explanation; source concept: '+source.title+'.',hint:'Identify the concept and write its rule before calculating.',tolerance:0.005};
+      return {id:'canvas-ban-'+id,courseId:'uncw-ban-280',chapterId:'canvas-ban-ch'+chapter,topicId:skill,skillId:skill,skill:skill,course:'Statistical Analysis for Business and Economics',family:'canvas-ban-'+skill,format:'numeric',difficulty:2,cognitive:'Apply',evidenceDimension:'Do',version:1,v36Pilot:true,v35Expanded:true,masteryEligible:false,v25MasteryEligible:false,practiceOnly:true,v344PracticeOnly:true,provenance:source.imported?'course_material':'cova_original',answerProvenance:'cova_derived_solution',sourceType:'Cova-original review'+(source.imported?' · '+source.title:''),sourceUrl:source.sourceUrl,sourceTitle:source.title,prompt:prompt,explanation:explanation+(source.imported?' Related concept in your notes: '+source.title+'.':''),hint:'Identify the concept and write its rule before calculating.',tolerance:0.005};
     }
     function numeric(source,ch,skill,id,prompt,answer,explanation){if(!source)return;var q=base(source,ch,skill,id,prompt,explanation);q.solution=answer;q.canonicalAnswer=answer;out.bank.push(q);}
     function mcq(source,ch,skill,id,prompt,correct,wrong,explanation){if(!source)return;var q=base(source,ch,skill,id,prompt,explanation),options=[correct].concat(wrong),k=out.bank.length%4;q.format='mcq';q.options=options.slice(4-k).concat(options.slice(0,4-k));q.solution=k;q.canonicalAnswer=correct;out.bank.push(q);}
@@ -51,7 +50,7 @@
     return (banCache = out);
   }
   function isBan(c){return c && c.id==='uncw-ban-280';}
-  function reviewNote(){var r=banReview();return 'Review based on your imported Canvas notes: Chapters '+r.chapters.join(', ')+'. Exact midterm coverage and exam format are not confirmed by the extracted checklist. Original Cova exercises; no exam date is assumed.';}
+  function reviewNote(){return 'Original Cova review for Chapters 1, 2, 3, and 6. Confirm your instructor’s midterm coverage and format. Add your section’s exam date in your calendar.';}
   if(typeof v36Cfg==='function'){
     var priorCanvasCfg=v36Cfg;
     v36Cfg=function(c){var cfg=priorCanvasCfg.apply(this,arguments);if(!cfg||!isBan(c)||!banReview().bank.length)return cfg;return Object.assign({},cfg,{exams:cfg.exams.map(function(ex){return ex.id==='midterm'?Object.assign({},ex,{practice:true,chapters:[],note:reviewNote(),canvasReview:true}):ex;})});};
@@ -70,7 +69,7 @@
   }
   if(typeof v37ExamPrepHTML==='function'){
     var priorCanvasExamHTML=v37ExamPrepHTML;
-    v37ExamPrepHTML=function(c,id){var html=priorCanvasExamHTML.apply(this,arguments);if(!isBan(c)||id!=='midterm'||!banReview().bank.length)return html;var r=banReview(),sources='<section class="v36-policy-card"><span class="eyebrow">Your Canvas materials are connected</span><h3>'+r.bank.length+' original review questions from your notes</h3><p>'+escape(reviewNote())+'</p><p>Section: '+escape(r.section)+'</p><ul>'+r.sources.map(function(s){return '<li><a href="'+escape(s.sourceUrl)+'" target="_blank" rel="noopener noreferrer">'+escape(s.title)+'</a></li>';}).join('')+'</ul></section>';return html.replace('<div class="v37-stage-track">',sources+'<div class="v37-stage-track">').replace('Cova mirrors the known course format where the source supports it, while keeping every item original.','Use original review exercises from your imported notes. This set does not claim to mirror your instructor’s exam format.');};
+    v37ExamPrepHTML=function(c,id){var html=priorCanvasExamHTML.apply(this,arguments);if(!isBan(c)||id!=='midterm'||!banReview().bank.length)return html;var r=banReview(),sources='<section class="v36-policy-card"><span class="eyebrow">BAN 280 review is ready</span><h3>'+r.bank.length+' original review questions</h3><p>'+escape(reviewNote())+'</p>'+(r.sources.length?'<h4>Your Canvas sources</h4>'+(r.section?'<p>Section: '+escape(r.section)+'</p>':'')+'<ul>'+r.sources.map(function(s){return '<li><a href="'+escape(s.sourceUrl)+'" target="_blank" rel="noopener noreferrer">'+escape(s.title)+'</a></li>';}).join('')+'</ul>':'')+'</section>';return html.replace('<div class="v37-stage-track">',sources+'<div class="v37-stage-track">').replace('Cova mirrors the known course format where the source supports it, while keeping every item original.','Practice with original Cova exercises. Confirm your instructor’s exam format before using this set as a timed rehearsal.').replace('mapped exam coverage','review topics').replace('Mix the exam coverage.','Mix the review topics.').replace('Mapped coverage','Review topics').replace('mapped questions','review questions').replace(/<>|<\/>/g,'');};
   }
 
 }
