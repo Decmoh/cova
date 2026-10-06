@@ -128,6 +128,92 @@ const QUESTION_NAV_PATCH = `
 })();
 `
 
+const ACG_EXAM_SCOPE_PATCH = `
+(function(){
+  function isAcgExam2Question(question){
+    if(!question)return false;
+    if(question.courseId&&question.courseId!=='uncw-acg-201')return false;
+    if(question.examUnit==='exam2')return true;
+    return ['acg201-ch4','acg201-ch5','acg201-ch6'].indexOf(question.chapterId)>=0;
+  }
+
+  function clearContaminatedResume(){
+    try{
+      var saved=state&&state.v19&&state.v19.activeSession;
+      if(!saved||saved.courseId!=='uncw-acg-201'||saved.examUnit!=='exam2'||!Array.isArray(saved.questions))return;
+      if(saved.questions.some(function(question){return !isAcgExam2Question(question)})){
+        state.v19.activeSession=null;
+        if(typeof save==='function')save();
+      }
+    }catch(e){}
+  }
+
+  clearContaminatedResume();
+
+  try{
+    if(typeof v36ExamQuestions==='function'&&!v36ExamQuestions.__covaAcgExam2Scope){
+      var priorExamQuestions=v36ExamQuestions;
+      var scopedExamQuestions=function(course,examId){
+        if(course&&course.id==='uncw-acg-201'&&examId==='exam2'){
+          var bank=[];
+          try{
+            if(typeof courseQuestionBank==='function')bank=courseQuestionBank(course,'mixed')||[];
+          }catch(e){}
+          var strict=bank.filter(isAcgExam2Question);
+          if(strict.length)return strict;
+          return (priorExamQuestions.apply(this,arguments)||[]).filter(isAcgExam2Question);
+        }
+        return priorExamQuestions.apply(this,arguments);
+      };
+      scopedExamQuestions.__covaAcgExam2Scope=true;
+      v36ExamQuestions=scopedExamQuestions;
+      window.v36ExamQuestions=scopedExamQuestions;
+    }
+  }catch(e){console.error('[cova] ACG Exam 2 scope setup failed:',e)}
+
+  try{
+    if(typeof v37Pick==='function'&&!v37Pick.__covaAcgExam2Formats){
+      var priorPick=v37Pick;
+      var scopedPick=function(bank,count,options){
+        var opts=options||{};
+        var isExam2Bank=Array.isArray(bank)&&bank.length>0&&bank.every(isAcgExam2Question);
+        if(isExam2Bank&&Array.isArray(opts.formats)&&opts.formats.length){
+          var hasRequestedFormat=bank.some(function(question){return opts.formats.indexOf(question.format)>=0});
+          if(!hasRequestedFormat){
+            var relaxed={skills:opts.skills||null,formats:null};
+            return priorPick(bank,count,relaxed);
+          }
+        }
+        return priorPick(bank,count,opts);
+      };
+      scopedPick.__covaAcgExam2Formats=true;
+      v37Pick=scopedPick;
+      window.v37Pick=scopedPick;
+    }
+  }catch(e){console.error('[cova] ACG Exam 2 format fallback failed:',e)}
+
+  try{
+    if(typeof v37LaunchQuestions==='function'&&!v37LaunchQuestions.__covaAcgExam2Scope){
+      var priorLaunch=v37LaunchQuestions;
+      var scopedLaunch=function(course,questions,meta){
+        if(course&&course.id==='uncw-acg-201'&&meta&&meta.examId==='exam2'){
+          clearContaminatedResume();
+          questions=(questions||[]).filter(isAcgExam2Question);
+          if(!questions.length){
+            if(typeof toast==='function')toast('Exam 2 practice is limited to Chapters 4–6.');
+            return;
+          }
+        }
+        return priorLaunch.call(this,course,questions,meta);
+      };
+      scopedLaunch.__covaAcgExam2Scope=true;
+      v37LaunchQuestions=scopedLaunch;
+      window.v37LaunchQuestions=scopedLaunch;
+    }
+  }catch(e){console.error('[cova] ACG Exam 2 launch guard failed:',e)}
+})();
+`
+
 // Faculty screens only show sample class data, so hiding them client-side is
 // enough; nothing faculty-only is sent from the server to student accounts.
 const STUDENT_LOCK = `
@@ -170,7 +256,7 @@ export async function GET() {
   const injection = `<script>window.__COVA__=${safeJson(payload)};${BOOTSTRAP}</script>`
   const body = html
     .replace(/<head([^>]*)>/i, (match) => `${match}${injection}`)
-    .replace(/<\/body>/i, (match) => `<script>${QUESTION_NAV_PATCH}</script>${role === 'faculty' ? '' : `<script>${STUDENT_LOCK}</script>`}${match}`)
+    .replace(/<\/body>/i, (match) => `<script>${QUESTION_NAV_PATCH}</script><script>${ACG_EXAM_SCOPE_PATCH}</script>${role === 'faculty' ? '' : `<script>${STUDENT_LOCK}</script>`}${match}`)
 
   return new Response(body, {
     headers: {
