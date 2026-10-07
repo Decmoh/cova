@@ -3,6 +3,7 @@ import path from 'node:path'
 import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 import { getStudentStore } from '@/lib/student-data'
+import { publicSiteResponse } from '@/lib/public-site'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,7 +53,7 @@ const BOOTSTRAP = `
     }).then(function(blob){
       var a=document.createElement('a');
       a.href=URL.createObjectURL(blob);
-      a.download='cova-campus-analytics.csv';
+      a.download='cova-account-progress.csv';
       document.body.appendChild(a);a.click();a.remove();
       setTimeout(function(){URL.revokeObjectURL(a.href)},1000);
     }).catch(function(err){console.error('[cova] analytics export failed:',err)});
@@ -61,11 +62,16 @@ const BOOTSTRAP = `
   window.addEventListener('DOMContentLoaded',function(){
     if(!C.user || String(C.user.email||'').trim().toLowerCase()!=='declan.mohan2007@gmail.com')return;
     var button=document.createElement('button');
-    button.type='button';button.textContent='Download analytics report';
-    button.setAttribute('aria-label','Download analytics report');
+    button.type='button';button.textContent='Account progress export';
+    button.setAttribute('aria-label','Account progress export');
     button.style.cssText='position:fixed;right:16px;bottom:16px;z-index:9999;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#111827;font:600 14px/1.2 sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.12);cursor:pointer';
     button.addEventListener('click',downloadAnalytics);
     document.body.appendChild(button);
+    var metrics=document.createElement('a');
+    metrics.href='/api/activation/report';metrics.textContent='Activation metrics (30 days)';
+    metrics.setAttribute('download','cova-activation-metrics.csv');
+    metrics.style.cssText=button.style.cssText+';bottom:64px;text-decoration:none';
+    document.body.appendChild(metrics);
   });
   window.covaSignOut=function(){
     return flush(false).then(function(){
@@ -246,19 +252,21 @@ const STUDENT_LOCK = `
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) {
-    return new Response(null, { status: 307, headers: { Location: '/sign-in' } })
+    return publicSiteResponse()
   }
 
   const [html, store] = await Promise.all([loadHtml(), getStudentStore(session.user.id)])
   const role = (session.user as { role?: string }).role === 'faculty' ? 'faculty' : 'student'
   const payload = {
     user: { id: session.user.id, name: session.user.name, email: session.user.email, role },
+    analyticsExcluded: role === 'faculty' || session.user.email.trim().toLowerCase() === 'declan.mohan2007@gmail.com',
     store,
   }
-  const injection = `<script>window.__COVA__=${safeJson(payload)};${BOOTSTRAP}</script>`
+  const injection = `<meta name="robots" content="noindex,nofollow"><script>window.__COVA__=${safeJson(payload)};${BOOTSTRAP}</script><script src="/cova-analytics.js"></script>`
   const canvasBridge = await readFile(path.join(process.cwd(), 'content/ban-canvas-bridge.js'), 'utf-8')
+  const analyticsBridge = await readFile(path.join(process.cwd(), 'content/analytics-bridge.js'), 'utf-8')
   const body = html
-    .replace('/* -------------------- Bootstrap / expose -------------------- */', canvasBridge + '\n/* -------------------- Bootstrap / expose -------------------- */')
+    .replace('/* -------------------- Bootstrap / expose -------------------- */', canvasBridge + '\n' + analyticsBridge + '\n/* -------------------- Bootstrap / expose -------------------- */')
     .replace(/<head([^>]*)>/i, (match) => `${match}${injection}`)
     .replace(/<\/body>/i, (match) => `<script>${QUESTION_NAV_PATCH}</script><script>${ACG_EXAM_SCOPE_PATCH}</script><script>${LAUNCH_FIX_PATCH}</script><script src="/canvas-materials.js"></script>${role === 'faculty' ? '' : `<script>${STUDENT_LOCK}</script>`}${match}`)
 
@@ -266,6 +274,8 @@ export async function GET() {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'private, no-store',
+      'Vary': 'Cookie',
+      'X-Robots-Tag': 'noindex, nofollow',
     },
   })
 }

@@ -19,6 +19,7 @@ export async function GET() {
   const store = await getStudentStore(session.user.id)
   const rows = [
     ['Metric', 'Value'],
+    ['Report type', 'Single-account progress export; not website traffic or aggregate analytics'],
     ['Student', session.user.name],
     ['Email', session.user.email],
     ['Generated at', new Date().toISOString()],
@@ -32,7 +33,7 @@ export async function GET() {
   return new Response(`\ufeff${csv}`, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': 'attachment; filename="cova-campus-analytics.csv"',
+      'Content-Disposition': 'attachment; filename="cova-account-progress.csv"',
       'Cache-Control': 'private, no-store',
     },
   })

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { AuthForm } from '@/components/auth-form'
 import { auth } from '@/lib/auth'
 
-export const metadata: Metadata = { title: 'Sign in · Cova Campus' }
+export const metadata: Metadata = { title: 'Sign in · Cova Campus', robots: { index: false, follow: true } }
 
 export default async function SignInPage() {
   const session = await auth.api.getSession({ headers: await headers() })

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { AuthForm } from '@/components/auth-form'
 import { auth } from '@/lib/auth'
 
-export const metadata: Metadata = { title: 'Create account · Cova Campus' }
+export const metadata: Metadata = { title: 'Create account · Cova Campus', robots: { index: false, follow: true } }
 
 export default async function SignUpPage() {
   const session = await auth.api.getSession({ headers: await headers() })
